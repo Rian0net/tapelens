@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapeLens — TapeGate Verify | TapeOut Circuit Explorer &amp; Verifier for X Layer</title>
+<meta name="description" content="Read-only explorer, live evaluator and claim verifier for TapeOut on-chain circuits on OKX X Layer. No wallet, no transactions, no fees — every number comes from free eth_call reads.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🔍 TapeLens <span class="dim">— TapeGate Verify</span></h1>
+    <p class="tagline">Explore, evaluate and <em>verify</em> TapeOut on-chain circuits on X Layer — read-only, no wallet, no fees.</p>
+    <nav>
+      <a href="#explorer">Explorer</a>
+      <a href="#evaluator">Evaluator</a>
+      <a href="#verifier">Verifier</a>
+      <a href="#tapegate">TapeGate Showcase</a>
+      <a href="#about">How it works</a>
+    </nav>
+    <div id="net-status" class="status">Connecting to X Layer…</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ EXPLORER ============ -->
+  <section id="explorer">
+    <h2>1 · Circuit Explorer</h2>
+    <p>Live from the TapeOut factory on X Layer (chainId 196). <span id="cpu-count" class="mono">cpuCount: …</span></p>
+    <div class="row">
+      <button id="pg-prev">← Prev</button>
+      <span id="pg-label" class="mono">page –</span>
+      <button id="pg-next">Next →</button>
+      <span class="spacer"></span>
+      <input id="manual-proc" class="mono grow" placeholder="…or paste a processor address (0x…)">
+      <button id="manual-proc-btn">Use address</button>
+    </div>
+    <div id="proc-list" class="list"></div>
+    <div id="proc-detail" class="card hidden">
+      <h3>Processor <span id="pd-addr" class="mono"></span></h3>
+      <p>
+        <span id="pd-iscpu" class="badge">isCPU: …</span>
+        <span id="pd-name" class="badge"></span>
+        <span id="pd-supply" class="badge"></span>
+      </p>
+      <div class="row">
+        <label>Circuit ID <input id="circuit-id" type="number" min="1" value="1" class="mono small"></label>
+        <button id="load-circuit">Load circuit</button>
+        <span id="load-msg" class="dim"></span>
+      </div>
+      <p class="dim">Tip: try the curated ViperX Risk Guardian preset in the Evaluator below — four real risk circuits already taped out on mainnet.</p>
+    </div>
+  </section>
+
+  <!-- ============ EVALUATOR ============ -->
+  <section id="evaluator">
+    <h2>2 · Live Evaluator</h2>
+    <p>Pick a circuit, feed it an input, and compare two independent evaluations of the <em>same</em> netlist:
+      the processor contract itself (<code>eth_call → eval</code>) and a local TAP-02 evaluator in your browser
+      running the netlist bytes read from chain. They must agree — that is the point of verifiable circuits.</p>
+
+    <div class="card">
+      <h3>Curated preset · ViperX Risk Guardian</h3>
+      <p class="mono dim">processor 0xb57b56034e2dc25161e2512CfC40b24EA3bee1Fb</p>
+      <div class="row wrap-btns">
+        <button class="preset" data-circuit="1" data-claim="le" data-k="2000">#1 Leverage ≤ 2000 <span class="dim">(lev ×100, i.e. 20.00×)</span></button>
+        <button class="preset" data-circuit="2" data-claim="le" data-k="200"> #2 Slippage ≤ 200 <span class="dim">(2.00%)</span></button>
+        <button class="preset" data-circuit="3" data-claim="le" data-k="2500">#3 Drawdown ≤ 2500 <span class="dim">(25.00%)</span></button>
+        <button class="preset" data-circuit="4" data-claim="ge" data-k="10">#4 Cooldown ≥ 10 <span class="dim">(seconds)</span></button>
+      </div>
+    </div>
+
+    <div id="circuit-panel" class="card hidden">
+      <h3>Circuit <span id="cp-title" class="mono"></span></h3>
+      <p id="cp-info" class="mono dim"></p>
+      <div class="row">
+        <label>Input mode
+          <select id="input-mode">
+            <option value="value">Number (little-endian)</option>
+            <option value="bits">Bit string (LSB first)</option>
+          </select>
+        </label>
+        <input id="eval-input" class="mono grow" value="1500">
+        <button id="eval-both">Evaluate on-chain + locally</button>
+      </div>
+      <div class="vs">
+        <div class="side">
+          <h4>On-chain <span class="dim">(eth_call eval)</span></h4>
+          <div id="res-onchain" class="result mono">—</div>
+        </div>
+        <div class="side">
+          <h4>Local <span class="dim">(TAP-02 in your browser)</span></h4>
+          <div id="res-local" class="result mono">—</div>
+        </div>
+      </div>
+      <p id="res-match" class="match"></p>
+    </div>
+  </section>
+
+  <!-- ============ VERIFIER ============ -->
+  <section id="verifier">
+    <h2>3 · Claim Verifier</h2>
+    <p>For small circuits (nIn ≤ 16) TapeLens enumerates the <em>entire</em> input space locally and checks a claimed
+      behaviour against every single input — no sampling, no trust. Load a circuit above, then run a claim check.</p>
+    <div class="card">
+      <div class="row">
+        <label>Claim: output = 1 iff input
+          <select id="claim-pattern">
+            <option value="le">≤ K</option>
+            <option value="ge">≥ K</option>
+          </select>
+        </label>
+        <label>K <input id="claim-k" type="number" value="2000" class="mono small"></label>
+        <button id="run-verify">Verify exhaustively</button>
+      </div>
+      <p id="verify-out" class="mono"></p>
+      <details>
+        <summary>Truth table (first 512 rows)</summary>
+        <div id="truth-wrap" class="truth mono"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ TAPEGATE SHOWCASE ============ -->
+  <section id="tapegate">
+    <h2>4 · TapeGate Showcase — our circuits, designed for this hackathon</h2>
+    <p><strong>TapeGate</strong> is a spending vault for AI agents and small teams whose rules are physical on-chain
+      circuits instead of admin-editable code: a spend is released only if <em>both</em> TapeOut circuits approve it
+      in the same transaction. The two circuits below were designed and exhaustively verified for this event and are
+      ready to tape out; the simulator runs the exact netlists locally (the same bytes a processor would store).</p>
+
+    <div class="card">
+      <h3>Circuit A · <span class="mono">amount_le_limit16</span> — spend ≤ limit</h3>
+      <p class="dim mono" id="tg-a-stats">loading…</p>
+      <div class="row">
+        <label class="grow">Amount <span id="tg-amount-v" class="mono">500</span>
+          <input id="tg-amount" type="range" min="0" max="65535" value="500"></label>
+      </div>
+      <div class="row">
+        <label class="grow">Limit <span id="tg-limit-v" class="mono">1000</span>
+          <input id="tg-limit" type="range" min="0" max="65535" value="1000"></label>
+      </div>
+      <p>Verdict: <span id="tg-a-lamp" class="lamp">…</span></p>
+    </div>
+
+    <div class="card">
+      <h3>Circuit B · <span class="mono">majority_2of3</span> — 2-of-3 guardian approvals</h3>
+      <p class="dim mono" id="tg-b-stats">loading…</p>
+      <div class="row">
+        <label><input type="checkbox" class="tg-appr" checked> Guardian 1</label>
+        <label><input type="checkbox" class="tg-appr" checked> Guardian 2</label>
+        <label><input type="checkbox" class="tg-appr"> Guardian 3</label>
+      </div>
+      <p>Verdict: <span id="tg-b-lamp" class="lamp">…</span></p>
+    </div>
+
+    <div class="card vault">
+      <h3>TapeGate Vault decision</h3>
+      <p id="tg-vault" class="vault-verdict">…</p>
+      <p class="dim">Enforced on-chain by <a href="TapeGateVault.sol">TapeGateVault.sol</a>, which calls
+        <code>eval</code> on both circuits inside <code>spend()</code> and reverts unless both return 1.
+        Off-chain verification performed for this showcase: comparator checked on <strong>398,352</strong> input vectors
+        (full sweep of every amount × boundary limits, plus seeded randoms through the packed-byte encoding);
+        majority checked on all <strong>8</strong> inputs. Netlists:
+        <a href="data/amount_le_limit16.json">amount_le_limit16.json</a> ·
+        <a href="data/majority_2of3.json">majority_2of3.json</a>.</p>
+    </div>
+  </section>
+
+  <!-- ============ ABOUT ============ -->
+  <section id="about">
+    <h2>5 · How it works</h2>
+    <p><strong>TapeOut</strong> turns digital logic into on-chain assets: NAND gates (logic) and LATCHes (state) are
+      ERC-1155 components; wiring them into a circuit and “taping out” burns the components and mints a Circuit NFT
+      whose netlist (format <strong>TAP-02 / tapnet/1</strong>) is stored by a processor contract. A circuit is pure
+      computation — it cannot move funds or call other contracts — and anyone can evaluate it for free with
+      <code>eval(circuitId, inputBytes)</code> as an <code>eth_call</code>. That is what makes circuit-gated products
+      like TapeGate auditable by construction: the rule <em>is</em> the circuit, and this page proves the rule behaves
+      as claimed over its whole input space.</p>
+    <ul class="mono dim">
+      <li>TapeOut factory (X Layer, chainId 196): 0x1f09daefa827f02cbb40967cc91b259763760761 — cpuCount() / cpuAt(i) / isCPU(addr)</li>
+      <li>Curated preset processor (ViperX Risk Guardian): 0xb57b56034e2dc25161e2512CfC40b24EA3bee1Fb — circuits 1–4</li>
+      <li>Reads go straight from your browser to public X Layer RPC endpoints (fallback chain in js/rpc.js). No server, no wallet, no tracking.</li>
+      <li>Honest note: the TapeOut factory is currently upgradeable (multisig-controlled, per the official tapeout.net disclaimer) — TapeLens does not claim it is immutable.</li>
+    </ul>
+    <p class="dim">Built for the OKX X Layer TapeOut Accelerate hackathon. Business model for TapeGate: paid vault setup +
+      premium rule templates for agent-wallet owners and small DAOs; TapeLens itself stays free as the public verification layer.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap dim">TapeLens — TapeGate Verify · read-only X Layer tool · circuits are evaluated, never trusted.</div>
+</footer>
+
+<script src="js/tap02.js"></script>
+<script src="js/rpc.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
